@@ -4,13 +4,16 @@ import { useState, useEffect, Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import { SubtitleForm } from '@/components/ParamForm'
-import { saveProject, addRender, getRenders, getProject } from '@/lib/projects'
+import { HistoryTab } from '@/components/HistoryTab'
+import { saveProject, addRender, getRenders, getProject, Project } from '@/lib/projects'
 import { PLATFORM_KEYS, PlatformKey } from '@/remotion/compositions/platforms'
 
 const SubtitleLivePreview = dynamic(
   () => import('@/components/SubtitleLivePreview').then(m => m.SubtitleLivePreview),
   { ssr: false }
 )
+
+type Tab = 'editor' | 'history'
 
 function toPlatformKey(v: unknown): PlatformKey {
   return (PLATFORM_KEYS as readonly string[]).includes(v as string) ? (v as PlatformKey) : '9:16'
@@ -47,6 +50,7 @@ function SubtitlePage() {
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
 
+  const [activeTab, setActiveTab] = useState<Tab>('editor')
   const [projectName, setProjectName] = useState('')
   const [params, setParams] = useState<Record<string, unknown>>(DEFAULT_PARAMS)
   const [renderId, setRenderId] = useState<string | null>(null)
@@ -61,6 +65,14 @@ function SubtitlePage() {
       setParams(p.params)
     }).catch(() => {})
   }, [editId])
+
+  const handleEdit = (project: Project) => {
+    setProjectName(project.name)
+    setParams(project.params)
+    setRenderId(null)
+    setError(null)
+    setActiveTab('editor')
+  }
 
   const handleRender = async () => {
     setLoading(true)
@@ -98,76 +110,106 @@ function SubtitlePage() {
     }
   }
 
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'editor', label: 'Editör' },
+    { key: 'history', label: 'Geçmiş' },
+  ]
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
-      <nav className="bg-white border-b border-gray-200 px-5 flex items-center h-12 shrink-0">
+      <nav className="bg-white border-b border-gray-200 px-5 flex items-center h-12 shrink-0 gap-6">
         <span className="text-sm font-black tracking-tight text-gray-900">🎬 Tribal Subtitle</span>
+        <div className="flex gap-1">
+          {tabs.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                activeTab === t.key
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </nav>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sol panel — form */}
-        <div className="w-[48%] border-r border-gray-100 overflow-y-auto" style={{ background: '#f8fafc' }}>
-          <div className="p-5 pb-0">
-            <div className="mb-4">
-              <label className="block text-xs font-bold text-gray-700 mb-1">Proje Adı</label>
-              <input
-                type="text"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-                placeholder="Projeye bir isim ver..."
-                value={projectName}
-                onChange={e => setProjectName(e.target.value)}
+      {/* Editör tab */}
+      {activeTab === 'editor' && (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sol panel — form */}
+          <div className="w-[48%] border-r border-gray-100 overflow-y-auto" style={{ background: '#f8fafc' }}>
+            <div className="p-5 pb-0">
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-gray-700 mb-1">Proje Adı</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  placeholder="Projeye bir isim ver..."
+                  value={projectName}
+                  onChange={e => setProjectName(e.target.value)}
+                />
+              </div>
+              <SubtitleForm
+                values={params}
+                update={(k, v) => setParams(prev => ({ ...prev, [k]: v }))}
               />
             </div>
-            <SubtitleForm
-              values={params}
-              update={(k, v) => setParams(prev => ({ ...prev, [k]: v }))}
-            />
-          </div>
-          <div className="p-5 pt-3 sticky bottom-0" style={{ background: '#f8fafc', borderTop: '1px solid #e5e7eb' }}>
-            <button
-              onClick={handleRender}
-              disabled={loading || !projectName.trim()}
-              className="w-full bg-gray-900 text-white text-sm font-semibold rounded-lg py-3 hover:bg-gray-700 transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Render ediliyor...' : '▶ Video Oluştur'}
-            </button>
-            {loading && (
-              <div className="mt-3 space-y-1">
-                <div className="flex justify-between text-xs text-gray-400">
-                  <span>Render ediliyor...</span>
-                  <span>%{progress}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div
-                    className="bg-gray-800 h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-            {error && (
-              <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
-                {error}
-              </div>
-            )}
-            {renderId && !loading && (
-              <a
-                href={`/api/download/${renderId}`}
-                download
-                className="block w-full text-center mt-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-emerald-700 transition-colors"
+            <div className="p-5 pt-3 sticky bottom-0" style={{ background: '#f8fafc', borderTop: '1px solid #e5e7eb' }}>
+              <button
+                onClick={handleRender}
+                disabled={loading || !projectName.trim()}
+                className="w-full bg-gray-900 text-white text-sm font-semibold rounded-lg py-3 hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
-                ⬇ İndir
-              </a>
-            )}
+                {loading ? 'Render ediliyor...' : '▶ Video Oluştur'}
+              </button>
+              {loading && (
+                <div className="mt-3 space-y-1">
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>Render ediliyor...</span>
+                    <span>%{progress}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div
+                      className="bg-gray-800 h-1.5 rounded-full transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              {error && (
+                <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+                  {error}
+                </div>
+              )}
+              {renderId && !loading && (
+                <a
+                  href={`/api/download/${renderId}`}
+                  download
+                  className="block w-full text-center mt-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-emerald-700 transition-colors"
+                >
+                  ⬇ İndir
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Sağ panel — live preview */}
+          <div className="flex-1 flex flex-col overflow-hidden" style={{ background: '#080c14' }}>
+            <SubtitleLivePreview values={params} />
           </div>
         </div>
+      )}
 
-        {/* Sağ panel — live preview */}
-        <div className="flex-1 flex flex-col overflow-hidden" style={{ background: '#080c14' }}>
-          <SubtitleLivePreview values={params} />
+      {/* Geçmiş tab */}
+      {activeTab === 'history' && (
+        <div className="flex flex-1 overflow-hidden">
+          <HistoryTab onEdit={handleEdit} />
         </div>
-      </div>
+      )}
     </div>
   )
 }
