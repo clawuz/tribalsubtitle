@@ -352,6 +352,30 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
   const [whisperStatus, setWhisperStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [whisperMessage, setWhisperMessage] = useState('')
   const [whisperProgress, setWhisperProgress] = useState(0)
+  const [detectedLang, setDetectedLang] = useState<{ code: string; name: string } | null>(null)
+  const [translateTarget, setTranslateTarget] = useState('')
+  const [translateStatus, setTranslateStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [translateMessage, setTranslateMessage] = useState('')
+
+  const TRANSLATE_LANGS = [
+    { code: 'en', name: 'English' },
+    { code: 'tr', name: 'Türkçe' },
+    { code: 'de', name: 'Deutsch' },
+    { code: 'fr', name: 'Français' },
+    { code: 'es', name: 'Español' },
+    { code: 'it', name: 'Italiano' },
+    { code: 'pt', name: 'Português' },
+    { code: 'nl', name: 'Nederlands' },
+    { code: 'ru', name: 'Русский' },
+    { code: 'ar', name: 'العربية' },
+    { code: 'ja', name: '日本語' },
+    { code: 'zh', name: '中文' },
+    { code: 'ko', name: '한국어' },
+    { code: 'hi', name: 'हिन्दी' },
+    { code: 'pl', name: 'Polski' },
+    { code: 'sv', name: 'Svenska' },
+    { code: 'uk', name: 'Українська' },
+  ]
 
   async function handleWhisper() {
     const mediaUrl = String(values.backgroundMedia ?? '')
@@ -362,16 +386,16 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
     }
     setWhisperStatus('loading')
     setWhisperProgress(0)
+    setDetectedLang(null)
+    setTranslateStatus('idle')
 
-    // Video süresine göre tahmini analiz süresi (CPU'da ~2x realtime)
     const durationSec = Number(values.durationSeconds ?? 30)
-    const estimatedMs = durationSec * 2000
+    const estimatedMs = Math.max(durationSec * 300, 3000) // Groq çok hızlı
     const startTime = Date.now()
     const timer = setInterval(() => {
       const elapsed = Date.now() - startTime
-      const estimated = Math.min((elapsed / estimatedMs) * 95, 95)
-      setWhisperProgress(Math.round(estimated))
-    }, 300)
+      setWhisperProgress(Math.round(Math.min((elapsed / estimatedMs) * 95, 95)))
+    }, 200)
 
     try {
       const res = await fetch('/api/transcribe', {
@@ -379,7 +403,6 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mediaUrl,
-          language: values.subtitleLang ?? 'tr',
           splitMode: values.splitMode ?? 'sentence',
           chunkSize: Number(values.chunkSize ?? 5),
         }),
@@ -391,10 +414,45 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
       update('subtitles', data.subtitles)
       setWhisperStatus('done')
       setWhisperMessage(`${data.subtitles.length} altyazı oluşturuldu`)
+      if (data.detectedLanguage) {
+        setDetectedLang({ code: data.detectedLanguage, name: data.detectedLanguageName ?? data.detectedLanguage })
+      }
     } catch (err) {
       clearInterval(timer)
       setWhisperStatus('error')
       setWhisperMessage(err instanceof Error ? err.message : 'Hata')
+    }
+  }
+
+  async function handleTranslate() {
+    if (!translateTarget) return
+    const currentSubtitles = Array.isArray(values.subtitles) ? values.subtitles : []
+    if (!currentSubtitles.length) {
+      setTranslateStatus('error')
+      setTranslateMessage('Önce transkript oluşturun')
+      return
+    }
+    setTranslateStatus('loading')
+    setTranslateMessage('')
+    const lang = TRANSLATE_LANGS.find(l => l.code === translateTarget)
+    try {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subtitles: currentSubtitles,
+          targetLanguage: translateTarget,
+          targetLanguageName: lang?.name ?? translateTarget,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      update('subtitles', data.subtitles)
+      setTranslateStatus('done')
+      setTranslateMessage(`${lang?.name ?? translateTarget} diline çevrildi`)
+    } catch (err) {
+      setTranslateStatus('error')
+      setTranslateMessage(err instanceof Error ? err.message : 'Çeviri hatası')
     }
   }
 
@@ -498,24 +556,9 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
         )}
       </div>
 
-      {/* Whisper + SRT */}
+      {/* Transkript + Çeviri */}
       <div className="bg-gray-50 rounded-lg p-3 space-y-2">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">2. Altyazı Oluştur</p>
-        <div className="flex gap-2 items-center">
-          <label className="text-xs text-gray-500 font-medium">Dil:</label>
-          <label className="flex items-center gap-1 text-xs cursor-pointer">
-            <input type="radio" name="subtitleLang" value="tr"
-              checked={(values.subtitleLang ?? 'tr') === 'tr'}
-              onChange={() => update('subtitleLang', 'tr')} />
-            Türkçe
-          </label>
-          <label className="flex items-center gap-1 text-xs cursor-pointer">
-            <input type="radio" name="subtitleLang" value="en"
-              checked={values.subtitleLang === 'en'}
-              onChange={() => update('subtitleLang', 'en')} />
-            İngilizce
-          </label>
-        </div>
 
         <div className="flex gap-2">
           <button
@@ -523,7 +566,7 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
             disabled={whisperStatus === 'loading'}
             className="flex-1 text-xs bg-indigo-600 text-white rounded-md py-1.5 px-3 font-medium disabled:opacity-50 hover:bg-indigo-700 transition-colors"
           >
-            {whisperStatus === 'loading' ? `⏳ Analiz ediliyor... %${whisperProgress}` : '🎤 Whisper ile Oluştur'}
+            {whisperStatus === 'loading' ? `⏳ Analiz ediliyor... %${whisperProgress}` : '🎤 Groq ile Transkript Et'}
           </button>
           <label className="flex-1 text-xs bg-gray-200 text-gray-700 rounded-md py-1.5 px-3 font-medium cursor-pointer text-center hover:bg-gray-300 transition-colors">
             📂 SRT Yükle
@@ -534,18 +577,47 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
 
         {whisperStatus === 'loading' && (
           <div className="w-full bg-gray-200 rounded-full h-1.5">
-            <div
-              className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300"
-              style={{ width: `${whisperProgress}%` }}
-            />
+            <div className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${whisperProgress}%` }} />
           </div>
         )}
-
         {whisperStatus === 'done' && (
-          <p className="text-xs text-emerald-600 font-medium">✓ {whisperMessage}</p>
+          <div className="space-y-1">
+            <p className="text-xs text-emerald-600 font-medium">✓ {whisperMessage}</p>
+            {detectedLang && (
+              <p className="text-[10px] text-gray-400">Algılanan dil: <span className="font-semibold text-gray-600">{detectedLang.name}</span> (otomatik)</p>
+            )}
+          </div>
         )}
         {whisperStatus === 'error' && (
           <p className="text-xs text-red-500">⚠ {whisperMessage}</p>
+        )}
+
+        {/* Çeviri — sadece transkript yapıldıktan sonra göster */}
+        {whisperStatus === 'done' && (
+          <div className="border-t border-gray-200 pt-2 space-y-1.5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Çeviri (isteğe bağlı)</p>
+            <div className="flex gap-2">
+              <select
+                value={translateTarget}
+                onChange={e => { setTranslateTarget(e.target.value); setTranslateStatus('idle') }}
+                className="flex-1 bg-white border border-gray-200 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              >
+                <option value="">— Dil seç —</option>
+                {TRANSLATE_LANGS.filter(l => l.code !== detectedLang?.code).map(l => (
+                  <option key={l.code} value={l.code}>{l.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleTranslate}
+                disabled={!translateTarget || translateStatus === 'loading'}
+                className="text-xs bg-violet-600 text-white rounded-md py-1.5 px-3 font-medium disabled:opacity-40 hover:bg-violet-700 transition-colors"
+              >
+                {translateStatus === 'loading' ? '⏳' : '🌐 Çevir'}
+              </button>
+            </div>
+            {translateStatus === 'done' && <p className="text-xs text-emerald-600 font-medium">✓ {translateMessage}</p>}
+            {translateStatus === 'error' && <p className="text-xs text-red-500">⚠ {translateMessage}</p>}
+          </div>
         )}
       </div>
 
