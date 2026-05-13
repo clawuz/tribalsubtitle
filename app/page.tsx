@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { SubtitleForm } from '@/components/ParamForm'
 import { VideoPreview } from '@/components/VideoPreview'
+import { saveProject, addRender, getRenders, getProject } from '@/lib/projects'
 import { PLATFORM_KEYS, PlatformKey } from '@/remotion/compositions/platforms'
 
 function toPlatformKey(v: unknown): PlatformKey {
@@ -35,25 +37,35 @@ const DEFAULT_PARAMS: Record<string, unknown> = {
 }
 
 function SubtitlePage() {
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('edit')
+
+  const [projectName, setProjectName] = useState('')
   const [params, setParams] = useState<Record<string, unknown>>(DEFAULT_PARAMS)
   const [renderId, setRenderId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
 
+  useEffect(() => {
+    if (!editId) return
+    getProject(editId).then(p => {
+      setProjectName(p.name)
+      setParams(p.params)
+    }).catch(() => {})
+  }, [editId])
+
   const handleRender = async () => {
     setLoading(true)
     setError(null)
     setRenderId(null)
     setProgress(0)
-
     const durationSec = Number(params.durationSeconds ?? 30)
     const estimatedMs = durationSec * 3000
     const startTime = Date.now()
     const timer = setInterval(() => {
       setProgress(Math.round(Math.min(((Date.now() - startTime) / estimatedMs) * 95, 95)))
     }, 500)
-
     try {
       const res = await fetch('/api/render', {
         method: 'POST',
@@ -65,6 +77,12 @@ function SubtitlePage() {
       clearInterval(timer)
       setProgress(100)
       setRenderId(data.id)
+      try {
+        const platform = toPlatformKey(params.platform)
+        const projectId = await saveProject(projectName || 'İsimsiz', 'Subtitle', platform, params)
+        const renders = await getRenders(projectId)
+        await addRender(projectId, data.id, platform, durationSec, renders.length + 1)
+      } catch {}
     } catch (err) {
       clearInterval(timer)
       setError(err instanceof Error ? err.message : 'Bilinmeyen hata')
@@ -77,22 +95,29 @@ function SubtitlePage() {
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
       <nav className="bg-white border-b border-gray-200 px-5 flex items-center h-12 shrink-0">
-        <span className="text-sm font-black tracking-tight text-gray-900">
-          🎬 Tribal Subtitle
-        </span>
+        <span className="text-sm font-black tracking-tight text-gray-900">🎬 Tribal Subtitle</span>
       </nav>
 
-      {/* Main */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel */}
+        {/* Sol panel */}
         <div className="w-[52%] p-5 border-r border-gray-100 overflow-y-auto">
+          <div className="mb-4">
+            <label className="block text-xs font-bold text-gray-700 mb-1">Proje Adı</label>
+            <input
+              type="text"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+              placeholder="Projeye bir isim ver..."
+              value={projectName}
+              onChange={e => setProjectName(e.target.value)}
+            />
+          </div>
           <SubtitleForm
             values={params}
             update={(k, v) => setParams(prev => ({ ...prev, [k]: v }))}
           />
           <button
             onClick={handleRender}
-            disabled={loading}
+            disabled={loading || !projectName.trim()}
             className="w-full mt-4 bg-gray-900 text-white text-sm font-semibold rounded-lg py-3 hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
             {loading ? 'Render ediliyor...' : 'Video Oluştur'}
@@ -118,7 +143,7 @@ function SubtitlePage() {
           )}
         </div>
 
-        {/* Right panel */}
+        {/* Sağ panel */}
         <div className="flex-1 bg-gray-50 flex items-center justify-center">
           <VideoPreview
             renderId={renderId}
