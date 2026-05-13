@@ -23,6 +23,7 @@ gcloud run deploy "${SERVICE}" \
   --concurrency 10 \
   --min-instances 0 \
   --max-instances 2 \
+  --port 3020 \
   --set-secrets="FIREBASE_SERVICE_ACCOUNT_KEY=FIREBASE_SERVICE_ACCOUNT_KEY:latest,FIREBASE_STORAGE_BUCKET=FIREBASE_STORAGE_BUCKET:latest" \
   --project "${PROJECT_ID}"
 
