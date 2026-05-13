@@ -6,21 +6,9 @@ import {
   Img as RemotionImg,
   Video,
   staticFile,
-  delayRender,
-  continueRender,
 } from 'remotion'
 
 const Img = RemotionImg as React.ComponentType<any>
-
-const _waitForTKFonts = delayRender('load-tk-fonts')
-Promise.all([
-  new FontFace('TKTextVF', `url(${staticFile('TKTextVF.woff2')})`).load(),
-  new FontFace('TKDISPLAYVF', `url(${staticFile('TKDISPLAYVF.woff2')})`).load(),
-]).then(([text, display]) => {
-  ;(document.fonts as any).add(text)
-  ;(document.fonts as any).add(display)
-  continueRender(_waitForTKFonts)
-}).catch(() => continueRender(_waitForTKFonts))
 import { z } from 'zod'
 import { PLATFORM_KEYS, PLATFORMS } from './platforms'
 
@@ -44,6 +32,7 @@ export const subtitleSchema = z.object({
   subtitleBold: z.boolean().default(true),
   subtitleOutline: z.boolean().default(false),
   subtitleOutlineColor: z.string().default('#000000'),
+  subtitleOutlineWidth: z.number().min(1).max(20).default(3),
   showLowerThird: z.boolean().default(false),
   lowerThirdText: z.string().default(''),
   lowerThirdColor: z.string().default('#10b981'),
@@ -98,7 +87,7 @@ export const Subtitle: React.FC<SubtitleProps> = (props) => {
     padding: activeSubtitle ? '12px 24px' : 0,
     borderRadius: 8,
     backgroundColor: activeSubtitle ? props.subtitleBgColor : 'transparent',
-    WebkitTextStroke: props.subtitleOutline ? `2px ${props.subtitleOutlineColor}` : undefined,
+    WebkitTextStroke: props.subtitleOutline ? `${props.subtitleOutlineWidth ?? 3}px ${props.subtitleOutlineColor}` : undefined,
     display: 'inline-block',
     maxWidth: '100%',
     wordBreak: 'break-word',

@@ -470,18 +470,6 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
 
   return (
     <div className="space-y-3">
-      {/* Platform Seçimi */}
-      <div>
-        <label className="block text-xs text-gray-500 mb-1 font-medium">Platform</label>
-        <select
-          className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm"
-          value={String(values.platform ?? '9:16')}
-          onChange={e => update('platform', e.target.value)}
-        >
-          {PLATFORM_KEYS.map(k => <option key={k} value={k}>{PLATFORMS[k].label}</option>)}
-        </select>
-      </div>
-
       {/* Video Yükle */}
       <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 space-y-2">
         <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">1. Videoyu Yükle</p>
@@ -623,6 +611,30 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
         )}
       </div>
 
+      {/* Platform */}
+      <div className="border-t border-gray-100 pt-3 space-y-2">
+        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Platform</p>
+        <select className="w-full bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 text-xs"
+          value={String(values.platform ?? '9:16')}
+          onChange={e => update('platform', e.target.value)}>
+          {PLATFORM_KEYS.map(k => (
+            <option key={k} value={k}>{PLATFORMS[k].label}</option>
+          ))}
+        </select>
+        {(() => {
+          const p = PLATFORMS[String(values.platform ?? '9:16') as keyof typeof PLATFORMS]
+          if (!p) return null
+          return (
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 bg-indigo-50 rounded-md px-3 py-2 text-[10px] text-indigo-700">
+              <span>Boyut: {p.w}×{p.h}</span>
+              <span>Üst güvenli: {p.safeTop}px</span>
+              <span>Alt güvenli: {p.safeBottom}px</span>
+              <span>Yan güvenli: {p.safeLeft}px</span>
+            </div>
+          )
+        })()}
+      </div>
+
       {/* Görünüm */}
       <div className="border-t border-gray-100 pt-3 space-y-3">
         <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Görünüm</p>
@@ -630,9 +642,9 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Font</label>
             <select className="w-full bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 text-xs"
-              value={String(values.subtitleFontFamily ?? 'Poppins')}
+              value={String(values.subtitleFontFamily ?? 'TKTextVF')}
               onChange={e => update('subtitleFontFamily', e.target.value)}>
-              {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+              {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </div>
           <div>
@@ -676,25 +688,45 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
           </div>
         </div>
 
-        <div className="flex gap-4">
-          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-            <input type="checkbox"
-              checked={Boolean(values.subtitleBold ?? true)}
-              onChange={e => update('subtitleBold', e.target.checked)} />
-            Kalın
-          </label>
-          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-            <input type="checkbox"
-              checked={Boolean(values.subtitleOutline)}
-              onChange={e => update('subtitleOutline', e.target.checked)} />
-            Outline
-          </label>
+        <div className="space-y-2">
+          <div className="flex gap-4">
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <input type="checkbox"
+                checked={Boolean(values.subtitleBold ?? true)}
+                onChange={e => update('subtitleBold', e.target.checked)} />
+              Kalın
+            </label>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <input type="checkbox"
+                checked={Boolean(values.subtitleOutline)}
+                onChange={e => update('subtitleOutline', e.target.checked)} />
+              Stroke
+            </label>
+          </div>
           {Boolean(values.subtitleOutline) && (
-            <ColorPicker
-              value={String(values.subtitleOutlineColor ?? '#000000')}
-              opacity={100}
-              showOpacity={false}
-              onChange={({ color }) => update('subtitleOutlineColor', color)} />
+            <div className="pl-1 space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1 font-medium">Stroke Rengi</label>
+                  <ColorPicker
+                    value={String(values.subtitleOutlineColor ?? '#000000')}
+                    opacity={100}
+                    showOpacity={false}
+                    onChange={({ color }) => update('subtitleOutlineColor', color)} />
+                </div>
+                <div className="w-24">
+                  <label className="block text-xs text-gray-500 mb-1 font-medium">Kalınlık (px)</label>
+                  <input type="number" min={1} max={20}
+                    value={Number(values.subtitleOutlineWidth ?? 3)}
+                    onChange={e => update('subtitleOutlineWidth', Number(e.target.value))}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 text-xs" />
+                </div>
+              </div>
+              <input type="range" min={1} max={20}
+                value={Number(values.subtitleOutlineWidth ?? 3)}
+                onChange={e => update('subtitleOutlineWidth', Number(e.target.value))}
+                className="w-full" />
+            </div>
           )}
         </div>
       </div>
@@ -783,7 +815,7 @@ function CommonFields({ values, update, templateId }: { values: Record<string, u
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Font</label>
             <select className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm" value={String(values.fontFamily ?? 'sans-serif')} onChange={e => update('fontFamily', e.target.value)}>
-              {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+              {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </div>
         )}

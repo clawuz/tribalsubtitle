@@ -25,6 +25,7 @@ export const RemotionRoot: React.FC = () => (
         subtitleBold: true,
         subtitleOutline: false,
         subtitleOutlineColor: '#000000',
+        subtitleOutlineWidth: 3,
         showLowerThird: false,
         lowerThirdText: '',
         lowerThirdColor: '#10b981',

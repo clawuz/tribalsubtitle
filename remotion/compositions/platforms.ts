@@ -36,14 +36,14 @@ export const PLATFORMS: Record<PlatformKey, PlatformConfig> = {
   'universal':       { label: 'Evrensel',          w: 1080, h: 1920, safeTop: 260, safeBottom: 260, safeLeft: 90,  safeRight: 90  },
 }
 
-export const FONTS: { value: string; label: string }[] = [
-  { value: 'TKTextVF, sans-serif',    label: 'TK Text' },
-  { value: 'TKDISPLAYVF, sans-serif', label: 'TK Display' },
-  { value: 'sans-serif',              label: 'System Sans' },
-  { value: 'Inter',                   label: 'Inter' },
-  { value: 'Poppins',                 label: 'Poppins' },
-  { value: 'Roboto',                  label: 'Roboto' },
-  { value: 'Montserrat',              label: 'Montserrat' },
-  { value: 'Oswald',                  label: 'Oswald' },
-  { value: 'Noto Sans',               label: 'Noto Sans' },
+export const FONTS = [
+  'TKTextVF',
+  'TKDISPLAYVF',
+  'sans-serif',
+  'Inter',
+  'Poppins',
+  'Roboto',
+  'Montserrat',
+  'Oswald',
+  'Noto Sans',
 ]
