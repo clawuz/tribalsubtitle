@@ -349,6 +349,8 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
     : []
 
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [whisperStatus, setWhisperStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [whisperMessage, setWhisperMessage] = useState('')
   const [whisperProgress, setWhisperProgress] = useState(0)
@@ -490,31 +492,67 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
     update('subtitles', updated)
   }
 
-  async function uploadVideoAndDetectDuration(file: File) {
+  function uploadVideoAndDetectDuration(file: File) {
     setUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (!data.remotionUrl) return
-      update('backgroundMedia', data.remotionUrl)
-      if (data.durationSeconds) {
-        update('durationSeconds', data.durationSeconds)
-      } else if (file.type.startsWith('video/')) {
-        // ffprobe yoksa client-side fallback
-        const objectUrl = URL.createObjectURL(file)
-        const video = document.createElement('video')
-        video.preload = 'metadata'
-        video.onloadedmetadata = () => {
-          update('durationSeconds', Math.ceil(video.duration))
-          URL.revokeObjectURL(objectUrl)
-        }
-        video.src = objectUrl
+    setUploadProgress(0)
+    setUploadError(null)
+
+    const fd = new FormData()
+    fd.append('file', file)
+
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', '/api/upload')
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        setUploadProgress(Math.round((e.loaded / e.total) * 100))
       }
-    } finally {
-      setUploading(false)
     }
+
+    xhr.onload = () => {
+      setUploading(false)
+      if (xhr.status !== 200) {
+        try {
+          const err = JSON.parse(xhr.responseText)
+          setUploadError(err.error ?? 'Yükleme hatası')
+        } catch {
+          setUploadError(`Sunucu hatası (${xhr.status})`)
+        }
+        return
+      }
+      try {
+        const data = JSON.parse(xhr.responseText)
+        if (!data.remotionUrl) { setUploadError('Yanıt geçersiz'); return }
+        update('backgroundMedia', data.remotionUrl)
+        if (data.durationSeconds) {
+          update('durationSeconds', data.durationSeconds)
+        } else if (file.type.startsWith('video/')) {
+          const objectUrl = URL.createObjectURL(file)
+          const video = document.createElement('video')
+          video.preload = 'metadata'
+          video.onloadedmetadata = () => {
+            update('durationSeconds', Math.ceil(video.duration))
+            URL.revokeObjectURL(objectUrl)
+          }
+          video.src = objectUrl
+        }
+      } catch {
+        setUploadError('Yanıt ayrıştırılamadı')
+      }
+    }
+
+    xhr.onerror = () => {
+      setUploading(false)
+      setUploadError('Ağ hatası — bağlantınızı kontrol edin')
+    }
+
+    xhr.timeout = 300000 // 5 dakika
+    xhr.ontimeout = () => {
+      setUploading(false)
+      setUploadError('Zaman aşımı — dosya çok büyük olabilir')
+    }
+
+    xhr.send(fd)
   }
 
   function addSubtitle() {
@@ -532,9 +570,31 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
       <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 space-y-2">
         <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">1. Videoyu Yükle</p>
         {uploading ? (
-          <div className="flex items-center gap-2 bg-white border border-indigo-200 rounded-lg px-3 py-3 text-xs text-indigo-500">
-            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-            Yükleniyor...
+          <div className="bg-white border border-indigo-200 rounded-lg px-3 py-3 space-y-2">
+            <div className="flex items-center justify-between text-xs text-indigo-500">
+              <div className="flex items-center gap-2">
+                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                Yükleniyor...
+              </div>
+              <span className="font-semibold">%{uploadProgress}</span>
+            </div>
+            <div className="w-full bg-indigo-100 rounded-full h-1.5">
+              <div
+                className="bg-indigo-500 h-1.5 rounded-full transition-all duration-200"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          </div>
+        ) : uploadError ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-600">
+              ⚠ {uploadError}
+            </div>
+            <label className="block w-full border-2 border-dashed border-indigo-300 rounded-lg py-3 text-center cursor-pointer hover:border-indigo-500 transition-colors bg-white">
+              <div className="text-xs text-indigo-600 font-semibold">Tekrar dene</div>
+              <input type="file" accept="video/mp4,video/webm,image/*" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadVideoAndDetectDuration(f) }} />
+            </label>
           </div>
         ) : values.backgroundMedia ? (
           <div className="flex items-center gap-2 bg-white border border-indigo-200 rounded-lg px-3 py-2">
