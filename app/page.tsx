@@ -91,6 +91,10 @@ function SubtitlePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
       })
+      const contentType = res.headers.get('content-type') ?? ''
+      if (!contentType.includes('application/json')) {
+        throw new Error(`Sunucu hatası (${res.status}) — loglara bakın`)
+      }
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Render hatası')
       clearInterval(timer)
