@@ -54,16 +54,16 @@ export function ColorPicker({ value, opacity, onChange, showOpacity = true }: Co
       </div>
 
       {/* Swatch grid */}
-      <div className="grid grid-cols-6 gap-1.5">
+      <div className="grid gap-0.5" style={{ gridTemplateColumns: 'repeat(13, minmax(0, 1fr))' }}>
         {/* None swatch */}
         <button
           title="Renk yok"
           onClick={() => onChange({ color: '', opacity })}
-          className={`aspect-square rounded-md border-2 border-dashed transition-all ${
-            value === '' ? 'border-indigo-500 ring-2 ring-indigo-300' : 'border-gray-300'
+          className={`w-5 h-5 rounded border-2 border-dashed transition-all ${
+            value === '' ? 'border-indigo-500 ring-1 ring-indigo-300' : 'border-gray-300'
           }`}
           style={{
-            backgroundImage: 'repeating-linear-gradient(45deg, #ccc, #ccc 2px, #fff 2px, #fff 6px)',
+            backgroundImage: 'repeating-linear-gradient(45deg, #ccc, #ccc 1px, #fff 1px, #fff 4px)',
           }}
         />
         {PALETTES[tab].map(color => (
@@ -71,8 +71,8 @@ export function ColorPicker({ value, opacity, onChange, showOpacity = true }: Co
             key={color}
             title={color}
             onClick={() => setColor(color)}
-            className={`aspect-square rounded-md transition-all hover:scale-110 border ${
-              value === color ? 'ring-2 ring-indigo-400 border-white' : 'border-transparent'
+            className={`w-5 h-5 rounded transition-all hover:scale-110 border ${
+              value === color ? 'ring-1 ring-indigo-400 border-white' : 'border-transparent'
             }`}
             style={{ backgroundColor: color }}
           />
@@ -85,7 +85,7 @@ export function ColorPicker({ value, opacity, onChange, showOpacity = true }: Co
           type="color"
           value={value || '#e67e22'}
           onChange={e => setColor(e.target.value)}
-          className="w-7 h-7 rounded cursor-pointer border border-gray-200"
+          className="w-5 h-5 rounded cursor-pointer border border-gray-200"
         />
         <input
           value={hexInput}

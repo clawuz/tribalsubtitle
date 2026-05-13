@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@remotion/bundler": "4.0.60",
+    "@remotion/player": "^4.0.60",
     "@remotion/renderer": "4.0.60",
     "firebase": "^11.0.0",
     "firebase-admin": "^13.0.0",
@@ -24,8 +25,8 @@
   "optionalDependencies": {
     "@remotion/compositor-darwin-arm64": "4.0.60",
     "@remotion/compositor-darwin-x64": "4.0.60",
-    "@remotion/compositor-linux-x64": "4.0.60",
-    "@remotion/compositor-linux-arm64": "4.0.60"
+    "@remotion/compositor-linux-arm64": "4.0.60",
+    "@remotion/compositor-linux-x64": "4.0.60"
   },
   "devDependencies": {
     "@types/node": "^20",
