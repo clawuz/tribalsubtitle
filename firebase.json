@@ -1,0 +1,21 @@
+{
+  "hosting": {
+    "site": "tribalsubtitle",
+    "public": "public-static",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "tribalsubtitle",
+          "region": "us-central1",
+          "pinTag": false
+        }
+      }
+    ]
+  }
+}

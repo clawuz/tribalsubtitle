@@ -1,0 +1,14 @@
+runConfig:
+  minInstances: 0
+  maxInstances: 2
+  concurrency: 10
+  cpu: 2
+  memoryMiB: 2048
+  timeoutSeconds: 300
+env:
+  - variable: FIREBASE_STORAGE_BUCKET
+    secret: FIREBASE_STORAGE_BUCKET
+  - variable: FIREBASE_SERVICE_ACCOUNT_KEY
+    secret: FIREBASE_SERVICE_ACCOUNT_KEY
+  - variable: NODE_ENV
+    value: production
