@@ -173,6 +173,7 @@ function SubtitlePage() {
           <div className="flex-1 flex flex-col overflow-hidden" style={{ background: '#080c14' }}>
             <SubtitleTimeline
               videoUrl={String(params.backgroundMedia ?? '')}
+              platform={String(params.platform ?? '9:16')}
               subtitles={(params.subtitles as { startMs: number; endMs: number; text: string }[]) ?? []}
               onSubtitlesChange={subs => setParams(prev => ({ ...prev, subtitles: subs }))}
               subtitleStyle={{

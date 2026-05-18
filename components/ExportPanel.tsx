@@ -152,9 +152,12 @@ export function ExportPanel({ exportOptions, projectName, onClose }: ExportPanel
 
         {/* Bitrate */}
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">
-            Kalite — {formatBitrate(settings.bitrate)}
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-semibold text-gray-600">Kalite — {formatBitrate(settings.bitrate)}</label>
+            <span className="text-[10px] text-gray-500 tabular-nums">
+              ~{((settings.bitrate + (settings.includeAudio ? settings.audioBitrate : 0)) * exportOptions.durationSeconds / 8 / 1_000_000).toFixed(1)} MB
+            </span>
+          </div>
           <input
             type="range"
             min={BITRATE_RANGE.min}

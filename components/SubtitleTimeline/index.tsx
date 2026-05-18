@@ -14,6 +14,7 @@ export interface SubtitleEntry {
 
 interface Props {
   videoUrl: string
+  platform?: string
   subtitles: SubtitleEntry[]
   onSubtitlesChange: (subtitles: SubtitleEntry[]) => void
   subtitleStyle?: {
@@ -31,7 +32,7 @@ const TRACK_HEIGHT = 40
 const RULER_H = 28
 const LABEL_W = 0   // no label column for subtitles
 
-export function SubtitleTimeline({ videoUrl, subtitles, onSubtitlesChange, subtitleStyle }: Props) {
+export function SubtitleTimeline({ videoUrl, platform = '9:16', subtitles, onSubtitlesChange, subtitleStyle }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerW, setContainerW] = useState(800)
   const { zoom, scrollX, duration, currentTime, setZoom, setScrollX, setSelectedId } = useTimelineStore()
@@ -86,6 +87,7 @@ export function SubtitleTimeline({ videoUrl, subtitles, onSubtitlesChange, subti
       <div className="flex-1 min-h-0 overflow-hidden">
         <SubtitlePlayer
           videoUrl={videoUrl}
+          platform={platform}
           subtitles={subtitles}
           subtitleStyle={subtitleStyle}
         />
