@@ -528,6 +528,38 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
     { code: 'uk', name: 'Українська' },
   ]
 
+  async function extractAudioWav(blobUrl: string): Promise<Blob> {
+    const res = await fetch(blobUrl)
+    const arrayBuffer = await res.arrayBuffer()
+    const audioCtx = new AudioContext()
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
+    await audioCtx.close()
+
+    const targetRate = 16000
+    const offlineCtx = new OfflineAudioContext(1, Math.ceil(audioBuffer.duration * targetRate), targetRate)
+    const source = offlineCtx.createBufferSource()
+    source.buffer = audioBuffer
+    source.connect(offlineCtx.destination)
+    source.start(0)
+    const rendered = await offlineCtx.startRendering()
+
+    const samples = rendered.getChannelData(0)
+    const int16 = new Int16Array(samples.length)
+    for (let i = 0; i < samples.length; i++) {
+      int16[i] = Math.max(-32768, Math.min(32767, Math.round(samples[i] * 32767)))
+    }
+    const wav = new ArrayBuffer(44 + int16.byteLength)
+    const v = new DataView(wav)
+    const w = (o: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)) }
+    w(0, 'RIFF'); v.setUint32(4, 36 + int16.byteLength, true); w(8, 'WAVE')
+    w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true)
+    v.setUint32(24, targetRate, true); v.setUint32(28, targetRate * 2, true)
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true)
+    w(36, 'data'); v.setUint32(40, int16.byteLength, true)
+    new Int16Array(wav, 44).set(int16)
+    return new Blob([wav], { type: 'audio/wav' })
+  }
+
   async function handleWhisper() {
     const mediaUrl = String(values.backgroundMedia ?? '')
     if (!mediaUrl) {
@@ -541,7 +573,7 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
     setTranslateStatus('idle')
 
     const durationSec = Number(values.durationSeconds ?? 30)
-    const estimatedMs = Math.max(durationSec * 300, 3000) // Groq çok hızlı
+    const estimatedMs = Math.max(durationSec * 300, 3000)
     const startTime = Date.now()
     const timer = setInterval(() => {
       const elapsed = Date.now() - startTime
@@ -549,15 +581,13 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
     }, 200)
 
     try {
-      const res = await fetch('/api/transcribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mediaUrl,
-          splitMode: values.splitMode ?? 'sentence',
-          chunkSize: Number(values.chunkSize ?? 5),
-        }),
-      })
+      const audioBlob = await extractAudioWav(mediaUrl)
+      const fd = new FormData()
+      fd.append('file', audioBlob, 'audio.wav')
+      fd.append('splitMode', String(values.splitMode ?? 'sentence'))
+      fd.append('chunkSize', String(values.chunkSize ?? 5))
+
+      const res = await fetch('/api/transcribe', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       clearInterval(timer)

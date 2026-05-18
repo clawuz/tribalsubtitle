@@ -2,7 +2,6 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import type { SubtitleSplitMode } from '@/remotion/compositions/types'
-import path from 'path'
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY ?? ''
 
@@ -74,30 +73,21 @@ function splitToSubtitles(words: WordSegment[], mode: string, chunkSize: number)
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json() as {
-      mediaUrl: string
-      splitMode?: SubtitleSplitMode
-      chunkSize?: number
-    }
+    const reqForm = await req.formData()
+    const file = reqForm.get('file') as File | null
+    const splitMode = (reqForm.get('splitMode') as SubtitleSplitMode | null) ?? 'sentence'
+    const chunkSize = Number(reqForm.get('chunkSize') ?? '5')
 
-    const { mediaUrl, splitMode = 'sentence', chunkSize = 5 } = body
-
-    if (!mediaUrl) {
-      return NextResponse.json({ error: 'mediaUrl gerekli' }, { status: 400 })
+    if (!file) {
+      return NextResponse.json({ error: 'Ses dosyası gerekli' }, { status: 400 })
     }
 
     if (!GROQ_API_KEY) {
       return NextResponse.json({ error: 'GROQ_API_KEY ayarlanmamış' }, { status: 503 })
     }
 
-    const filename = path.basename(new URL(mediaUrl).pathname)
-    const mediaRes = await fetch(mediaUrl)
-    if (!mediaRes.ok) {
-      return NextResponse.json({ error: 'Medya dosyası indirilemedi' }, { status: 400 })
-    }
-    const fileBuffer = Buffer.from(await mediaRes.arrayBuffer())
     const formData = new FormData()
-    formData.append('file', new Blob([fileBuffer], { type: 'video/mp4' }), filename)
+    formData.append('file', file, file.name || 'audio.wav')
     formData.append('model', 'whisper-large-v3')
     formData.append('response_format', 'verbose_json')
     formData.append('timestamp_granularities[]', 'word')
