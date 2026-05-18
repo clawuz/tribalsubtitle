@@ -1,5 +1,7 @@
 'use client'
 import { useState } from 'react'
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import { storage } from '@/lib/firebase'
 import { ColorPicker } from './ColorPicker'
 import { BodyItem, EntryAnimType, ExitAnimType, SubtitleEntry } from '@/remotion/compositions/types'
 import { PLATFORMS, PLATFORM_KEYS, FONTS } from '@/remotion/compositions/platforms'
@@ -651,62 +653,41 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
     setUploadProgress(0)
     setUploadError(null)
 
-    const fd = new FormData()
-    fd.append('file', file)
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'mp4'
+    const filename = `uploads/${crypto.randomUUID()}.${ext}`
+    const storageRef = ref(storage, filename)
+    const task = uploadBytesResumable(storageRef, file, { contentType: file.type })
 
-    const xhr = new XMLHttpRequest()
-    xhr.open('POST', '/api/upload')
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        setUploadProgress(Math.round((e.loaded / e.total) * 100))
-      }
-    }
-
-    xhr.onload = () => {
-      setUploading(false)
-      if (xhr.status !== 200) {
+    task.on('state_changed',
+      (snap) => {
+        setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100))
+      },
+      (err) => {
+        setUploading(false)
+        setUploadError(err.message ?? 'Yükleme hatası')
+      },
+      async () => {
         try {
-          const err = JSON.parse(xhr.responseText)
-          setUploadError(err.error ?? 'Yükleme hatası')
-        } catch {
-          setUploadError(`Sunucu hatası (${xhr.status})`)
-        }
-        return
-      }
-      try {
-        const data = JSON.parse(xhr.responseText)
-        if (!data.remotionUrl) { setUploadError('Yanıt geçersiz'); return }
-        update('backgroundMedia', data.remotionUrl)
-        if (data.durationSeconds) {
-          update('durationSeconds', data.durationSeconds)
-        } else if (file.type.startsWith('video/')) {
-          const objectUrl = URL.createObjectURL(file)
-          const video = document.createElement('video')
-          video.preload = 'metadata'
-          video.onloadedmetadata = () => {
-            update('durationSeconds', Math.ceil(video.duration))
-            URL.revokeObjectURL(objectUrl)
+          const url = await getDownloadURL(task.snapshot.ref)
+          update('backgroundMedia', url)
+          if (file.type.startsWith('video/')) {
+            const objectUrl = URL.createObjectURL(file)
+            const video = document.createElement('video')
+            video.preload = 'metadata'
+            video.onloadedmetadata = () => {
+              update('durationSeconds', Math.ceil(video.duration))
+              URL.revokeObjectURL(objectUrl)
+            }
+            video.src = objectUrl
           }
-          video.src = objectUrl
+        } catch (e) {
+          setUploadError(e instanceof Error ? e.message : 'URL alınamadı')
+        } finally {
+          setUploading(false)
         }
-      } catch {
-        setUploadError('Yanıt ayrıştırılamadı')
       }
-    }
+    )
 
-    xhr.onerror = () => {
-      setUploading(false)
-      setUploadError('Ağ hatası — bağlantınızı kontrol edin')
-    }
-
-    xhr.timeout = 300000 // 5 dakika
-    xhr.ontimeout = () => {
-      setUploading(false)
-      setUploadError('Zaman aşımı — dosya çok büyük olabilir')
-    }
-
-    xhr.send(fd)
   }
 
   function addSubtitle() {
