@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { SubtitleForm } from '@/components/ParamForm'
 import { PLATFORMS, PLATFORM_KEYS, PlatformKey } from '@/remotion/compositions/platforms'
 import { HistoryTab } from '@/components/HistoryTab'
+import { ExportPanel } from '@/components/ExportPanel'
 import { saveProject, addRender, getRenders, getProject, Project } from '@/lib/projects'
 
 const SubtitleLivePreview = dynamic(
@@ -58,6 +59,7 @@ function SubtitlePage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [showExportPanel, setShowExportPanel] = useState(false)
 
   useEffect(() => {
     if (!editId) return
@@ -221,6 +223,39 @@ function SubtitlePage() {
                 >
                   ⬇ İndir
                 </a>
+              )}
+              <button
+                onClick={() => setShowExportPanel(v => !v)}
+                disabled={!params.backgroundMedia}
+                className="w-full mt-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-indigo-700 transition-colors disabled:opacity-40"
+              >
+                🖥 Tarayıcıda Export Et
+              </button>
+              {showExportPanel && (
+                <div className="mt-3">
+                  <ExportPanel
+                    exportOptions={{
+                      backgroundMediaUrl: String(params.backgroundMedia ?? ''),
+                      subtitles: (params.subtitles as { startMs: number; endMs: number; text: string }[]) ?? [],
+                      durationSeconds: Number(params.durationSeconds ?? 30),
+                      platform: String(params.platform ?? '9:16'),
+                      render: {
+                        subtitleFontSize: Number(params.subtitleFontSize ?? 52),
+                        subtitleFontFamily: String(params.subtitleFontFamily ?? 'TKTextVF'),
+                        subtitleColor: String(params.subtitleColor ?? '#ffffff'),
+                        subtitleBgColor: String(params.subtitleBgColor ?? 'rgba(0,0,0,0.65)'),
+                        subtitleBold: Boolean(params.subtitleBold ?? true),
+                        subtitleOutline: Boolean(params.subtitleOutline ?? false),
+                        subtitleOutlineColor: String(params.subtitleOutlineColor ?? '#000000'),
+                        subtitleOutlineWidth: Number(params.subtitleOutlineWidth ?? 3),
+                        subtitleX: Number(params.subtitleX ?? 50),
+                        subtitleY: Number(params.subtitleY ?? 85),
+                      },
+                    }}
+                    projectName={projectName}
+                    onClose={() => setShowExportPanel(false)}
+                  />
+                </div>
               )}
             </div>
           </div>

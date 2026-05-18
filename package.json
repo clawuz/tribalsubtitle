@@ -16,11 +16,13 @@
     "@remotion/renderer": "4.0.60",
     "firebase": "^11.0.0",
     "firebase-admin": "^13.0.0",
+    "mediabunny": "^1.45.2",
     "next": "14.2.29",
     "react": "^18",
     "react-dom": "^18",
     "remotion": "4.0.60",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "zustand": "^5.0.13"
   },
   "optionalDependencies": {
     "@remotion/compositor-darwin-arm64": "4.0.60",
