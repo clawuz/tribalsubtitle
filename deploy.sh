@@ -27,7 +27,7 @@ gcloud run deploy "${SERVICE}" \
   --set-secrets="FIREBASE_SERVICE_ACCOUNT_KEY=FIREBASE_SERVICE_ACCOUNT_KEY:latest,FIREBASE_STORAGE_BUCKET=FIREBASE_STORAGE_BUCKET:latest,GROQ_API_KEY=GROQ_API_KEY:latest" \
   --project "${PROJECT_ID}"
 
-echo "=== Deploying Firebase Hosting + Storage Rules ==="
-firebase deploy --only hosting:tribalsubtitle,storage --project "${PROJECT_ID}"
+echo "=== Deploying Firebase Hosting ==="
+firebase deploy --only hosting:tribalsubtitle --project "${PROJECT_ID}"
 
 echo "=== Done! Live at: https://tribalsubtitle.web.app ==="

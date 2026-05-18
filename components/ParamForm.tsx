@@ -1,7 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
-import { storage } from '@/lib/firebase'
 import { ColorPicker } from './ColorPicker'
 import { BodyItem, EntryAnimType, ExitAnimType, SubtitleEntry } from '@/remotion/compositions/types'
 import { PLATFORMS, PLATFORM_KEYS, FONTS } from '@/remotion/compositions/platforms'
@@ -653,41 +651,20 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
     setUploadProgress(0)
     setUploadError(null)
 
-    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'mp4'
-    const filename = `uploads/${crypto.randomUUID()}.${ext}`
-    const storageRef = ref(storage, filename)
-    const task = uploadBytesResumable(storageRef, file, { contentType: file.type })
+    const blobUrl = URL.createObjectURL(file)
+    update('backgroundMedia', blobUrl)
 
-    task.on('state_changed',
-      (snap) => {
-        setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100))
-      },
-      (err) => {
-        setUploading(false)
-        setUploadError(err.message ?? 'Yükleme hatası')
-      },
-      async () => {
-        try {
-          const url = await getDownloadURL(task.snapshot.ref)
-          update('backgroundMedia', url)
-          if (file.type.startsWith('video/')) {
-            const objectUrl = URL.createObjectURL(file)
-            const video = document.createElement('video')
-            video.preload = 'metadata'
-            video.onloadedmetadata = () => {
-              update('durationSeconds', Math.ceil(video.duration))
-              URL.revokeObjectURL(objectUrl)
-            }
-            video.src = objectUrl
-          }
-        } catch (e) {
-          setUploadError(e instanceof Error ? e.message : 'URL alınamadı')
-        } finally {
-          setUploading(false)
-        }
+    if (file.type.startsWith('video/')) {
+      const video = document.createElement('video')
+      video.preload = 'metadata'
+      video.onloadedmetadata = () => {
+        update('durationSeconds', Math.ceil(video.duration))
       }
-    )
+      video.src = blobUrl
+    }
 
+    setUploadProgress(100)
+    setUploading(false)
   }
 
   function addSubtitle() {
