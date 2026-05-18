@@ -4,22 +4,23 @@ import path from 'path'
 import os from 'os'
 import { randomUUID } from 'crypto'
 
-// Start bundling immediately at module load so it's ready before the first request
-const bundlePromise: Promise<string> = bundle({
-  entryPoint: path.resolve(process.cwd(), 'remotion/index.ts'),
-  webpackOverride: (config) => config,
-}).then(url => {
-  console.log('[remotion] bundle ready:', url)
-  return url
-}).catch(err => {
-  console.error('[remotion] bundle failed:', err)
-  throw err
-})
+let bundled: string | null = null
+
+async function getBundle(): Promise<string> {
+  if (bundled) return bundled
+  console.log('[remotion] bundling...')
+  bundled = await bundle({
+    entryPoint: path.resolve(process.cwd(), 'remotion/index.ts'),
+    webpackOverride: (config) => config,
+  })
+  console.log('[remotion] bundle ready:', bundled)
+  return bundled
+}
 
 export async function renderSubtitleVideo(
   props: Record<string, unknown>,
 ): Promise<string> {
-  const serveUrl = await bundlePromise
+  const serveUrl = await getBundle()
 
   const composition = await selectComposition({
     serveUrl,

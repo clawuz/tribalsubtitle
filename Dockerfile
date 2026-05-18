@@ -35,7 +35,9 @@ RUN npm ci --include=optional 2>&1 || npm install --include=optional
 # Kaynak kodunu kopyala
 COPY . .
 
-# Build
+# Build (NEXT_PUBLIC vars must be available at build time)
+ARG NEXT_PUBLIC_RENDER_URL=https://tribalsubtitle-343168496187.us-central1.run.app
+ENV NEXT_PUBLIC_RENDER_URL=$NEXT_PUBLIC_RENDER_URL
 RUN npm run build
 
 # Üretim başlat
