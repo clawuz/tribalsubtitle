@@ -34,7 +34,7 @@ export async function renderSubtitleVideo(
     codec: 'h264',
     outputLocation: outPath,
     inputProps: props,
-    concurrency: 8,
+    concurrency: os.cpus().length,
     chromiumOptions: {
       disableWebSecurity: true,
       gl: 'swangle',
