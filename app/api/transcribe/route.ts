@@ -47,27 +47,25 @@ function splitToSubtitles(words: WordSegment[], mode: string, chunkSize: number)
     return result
   }
 
-  // sentence mode
+  // sentence mode — with max-words fallback so long unpunctuated speech still splits
+  const maxWords = Math.max(chunkSize, 8)
   const result: SubtitleEntry[] = []
   let current: WordSegment[] = []
-  for (const w of words) {
-    current.push(w)
-    if (w.word && SENTENCE_END.has(w.word[w.word.length - 1])) {
-      result.push({
-        startMs: current[0].startMs,
-        endMs: current[current.length - 1].endMs,
-        text: current.map(c => c.word).join(' '),
-      })
-      current = []
-    }
-  }
-  if (current.length) {
+  const flush = () => {
+    if (!current.length) return
     result.push({
       startMs: current[0].startMs,
       endMs: current[current.length - 1].endMs,
       text: current.map(c => c.word).join(' '),
     })
+    current = []
   }
+  for (const w of words) {
+    current.push(w)
+    const isSentenceEnd = w.word && SENTENCE_END.has(w.word[w.word.length - 1])
+    if (isSentenceEnd || current.length >= maxWords) flush()
+  }
+  flush()
   return result
 }
 
