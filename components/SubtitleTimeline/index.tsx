@@ -53,7 +53,8 @@ export function SubtitleTimeline({ videoUrl, platform = '9:16', subtitles, wordS
     return () => ro.disconnect()
   }, [])
 
-  const timelineW = duration * zoom + 80
+  const videoEndX = duration * zoom
+  const timelineW = videoEndX + 24
 
   // Scroll on wheel
   const onWheel = useCallback((e: React.WheelEvent) => {
@@ -142,6 +143,14 @@ export function SubtitleTimeline({ videoUrl, platform = '9:16', subtitles, wordS
                   onUpdate={updateSubtitle}
                 />
               ))}
+            </div>
+
+            {/* Video end marker */}
+            <div
+              className="absolute top-0 bottom-0 pointer-events-none"
+              style={{ left: `${videoEndX}px`, width: '2px', background: 'rgba(239,68,68,0.7)', zIndex: 8 }}
+            >
+              <span className="absolute top-0 left-1 text-[9px] text-red-400 whitespace-nowrap font-mono">END</span>
             </div>
 
             {/* Playhead */}
