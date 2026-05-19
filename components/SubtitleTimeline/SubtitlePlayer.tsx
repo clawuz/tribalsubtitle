@@ -9,10 +9,17 @@ interface SubtitleEntry {
   text: string
 }
 
+interface WordSegment {
+  word: string
+  startMs: number
+  endMs: number
+}
+
 interface Props {
   videoUrl: string
   platform?: string
   subtitles: SubtitleEntry[]
+  wordSegments?: WordSegment[]
   subtitleStyle?: {
     fontSize?: number
     fontFamily?: string
@@ -39,7 +46,7 @@ const SAFE_AREAS: Record<string, [number, number, number, number]> = {
   '4:5':  [0.07, 0.05, 0.07, 0.05],
 }
 
-export function SubtitlePlayer({ videoUrl, platform = '9:16', subtitles, subtitleStyle }: Props) {
+export function SubtitlePlayer({ videoUrl, platform = '9:16', subtitles, wordSegments = [], subtitleStyle }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number>(0)
@@ -139,7 +146,9 @@ export function SubtitlePlayer({ videoUrl, platform = '9:16', subtitles, subtitl
   }, [setCurrentTime])
 
   const togglePlay = useCallback(() => setIsPlaying(!isPlaying), [isPlaying, setIsPlaying])
-  const activeSub = subtitles.find(s => currentTime * 1000 >= s.startMs && currentTime * 1000 < s.endMs)
+  const currentMs = currentTime * 1000
+  const activeSub = subtitles.find(s => currentMs >= s.startMs && currentMs < s.endMs)
+  const activeWordSeg = wordSegments.find(w => currentMs >= w.startMs && currentMs < w.endMs)
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
 
   // Safe area overlay dimensions relative to displayed video
@@ -232,17 +241,24 @@ export function SubtitlePlayer({ videoUrl, platform = '9:16', subtitles, subtitl
                 style={{
                   fontSize: `${scaledFontSize}px`,
                   fontFamily: style.fontFamily,
-                  color: style.color,
                   fontWeight: style.bold ? 'bold' : 'normal',
                   background: style.bgColor,
                   padding: `${scaledFontSize * 0.08}px ${scaledFontSize * 0.23}px`,
                   borderRadius: `${scaledFontSize * 0.12}px`,
                   lineHeight: 1.4,
-                  whiteSpace: 'pre-wrap',
                   display: 'inline-block',
                 }}
               >
-                {activeSub.text}
+                {(() => {
+                  const words = activeSub.text.split(' ')
+                  const subWords = wordSegments.filter(w => w.startMs >= activeSub.startMs && w.endMs <= activeSub.endMs + 200)
+                  const activeIdx = activeWordSeg ? subWords.findIndex(w => w.startMs === activeWordSeg.startMs) : -1
+                  return words.map((word, i) => (
+                    <span key={i} style={{ color: i === activeIdx ? '#facc15' : style.color, transition: 'color 0.05s' }}>
+                      {word}{i < words.length - 1 ? ' ' : ''}
+                    </span>
+                  ))
+                })()}
               </span>
             </div>
           )}

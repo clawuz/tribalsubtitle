@@ -12,10 +12,17 @@ export interface SubtitleEntry {
   text: string
 }
 
+interface WordSegment {
+  word: string
+  startMs: number
+  endMs: number
+}
+
 interface Props {
   videoUrl: string
   platform?: string
   subtitles: SubtitleEntry[]
+  wordSegments?: WordSegment[]
   onSubtitlesChange: (subtitles: SubtitleEntry[]) => void
   subtitleStyle?: {
     fontSize?: number
@@ -32,7 +39,7 @@ const TRACK_HEIGHT = 40
 const RULER_H = 28
 const LABEL_W = 0   // no label column for subtitles
 
-export function SubtitleTimeline({ videoUrl, platform = '9:16', subtitles, onSubtitlesChange, subtitleStyle }: Props) {
+export function SubtitleTimeline({ videoUrl, platform = '9:16', subtitles, wordSegments = [], onSubtitlesChange, subtitleStyle }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerW, setContainerW] = useState(800)
   const { zoom, scrollX, duration, currentTime, setZoom, setScrollX, setSelectedId } = useTimelineStore()
@@ -89,6 +96,7 @@ export function SubtitleTimeline({ videoUrl, platform = '9:16', subtitles, onSub
           videoUrl={videoUrl}
           platform={platform}
           subtitles={subtitles}
+          wordSegments={wordSegments}
           subtitleStyle={subtitleStyle}
         />
       </div>

@@ -593,6 +593,7 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
       clearInterval(timer)
       setWhisperProgress(100)
       update('subtitles', data.subtitles)
+      if (data.segments) update('wordSegments', data.segments)
       setWhisperStatus('done')
       setWhisperMessage(`${data.subtitles.length} altyazı oluşturuldu`)
       if (data.detectedLanguage) {

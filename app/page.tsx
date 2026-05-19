@@ -175,6 +175,7 @@ function SubtitlePage() {
               videoUrl={String(params.backgroundMedia ?? '')}
               platform={String(params.platform ?? '9:16')}
               subtitles={(params.subtitles as { startMs: number; endMs: number; text: string }[]) ?? []}
+              wordSegments={(params.wordSegments as { word: string; startMs: number; endMs: number }[]) ?? []}
               onSubtitlesChange={subs => setParams(prev => ({ ...prev, subtitles: subs }))}
               subtitleStyle={{
                 fontSize: Number(params.subtitleFontSize ?? 28),
