@@ -46,7 +46,7 @@ export function SubtitleTimeline({ videoUrl, platform = '9:16', subtitles, onSub
     return () => ro.disconnect()
   }, [])
 
-  const timelineW = Math.max(containerW, duration * zoom + 80)
+  const timelineW = duration * zoom + 80
 
   // Scroll on wheel
   const onWheel = useCallback((e: React.WheelEvent) => {
