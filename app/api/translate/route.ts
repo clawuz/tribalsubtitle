@@ -61,10 +61,10 @@ export async function POST(req: NextRequest) {
       const batchTranslated: string[] = content.translations ?? Object.values(content)
 
       if (!Array.isArray(batchTranslated) || batchTranslated.length !== batch.length) {
-        // fallback: keep original texts for this batch
         batch.forEach(s => translatedTexts.push(s.text))
       } else {
-        batchTranslated.forEach(t => translatedTexts.push(String(t)))
+        // Strip leading "1. " numbering the LLM sometimes adds
+        batchTranslated.forEach(t => translatedTexts.push(String(t).replace(/^\d+\.\s*/, '').trim()))
       }
     }
 

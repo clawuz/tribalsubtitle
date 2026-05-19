@@ -665,6 +665,15 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
     URL.revokeObjectURL(url)
   }
 
+  function shiftAllSubtitles(offsetMs: number) {
+    const shifted = subtitles.map(s => ({
+      ...s,
+      startMs: Math.max(0, s.startMs + offsetMs),
+      endMs: Math.max(0, s.endMs + offsetMs),
+    }))
+    update('subtitles', shifted)
+  }
+
   function updateSubtitle(idx: number, field: keyof SubtitleEntry, val: unknown) {
     const updated = subtitles.map((s, i) =>
       i === idx ? { ...s, [field]: field === 'text' ? val : Number(val) } : s
@@ -843,6 +852,17 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
             value={Number(values.chunkSize ?? 5)}
             onChange={e => update('chunkSize', Number(e.target.value))}
             className="w-20 bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-xs" />
+        </div>
+      )}
+
+      {/* Timing offset — shift all subtitles */}
+      {subtitles.length > 0 && (
+        <div className="flex items-center gap-2 py-1">
+          <span className="text-xs text-gray-500 shrink-0">Zamanlama</span>
+          <button onClick={() => shiftAllSubtitles(-500)} className="text-xs px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-600">−500ms</button>
+          <button onClick={() => shiftAllSubtitles(-100)} className="text-xs px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-600">−100ms</button>
+          <button onClick={() => shiftAllSubtitles(100)} className="text-xs px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-600">+100ms</button>
+          <button onClick={() => shiftAllSubtitles(500)} className="text-xs px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-600">+500ms</button>
         </div>
       )}
 
