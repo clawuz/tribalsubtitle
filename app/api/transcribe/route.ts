@@ -27,6 +27,9 @@ interface GroqVerboseResponse {
 interface WordSegment { word: string; startMs: number; endMs: number }
 interface SubtitleEntry { startMs: number; endMs: number; text: string }
 
+const SILENCE_THRESHOLD_MS = 400  // gap between words that signals a natural break
+const MAX_WORDS_PER_SUB = 8       // hard cap to prevent run-on subtitles
+
 function splitToSubtitles(words: WordSegment[], mode: string, chunkSize: number): SubtitleEntry[] {
   if (!words.length) return []
 
@@ -47,10 +50,10 @@ function splitToSubtitles(words: WordSegment[], mode: string, chunkSize: number)
     return result
   }
 
-  // sentence mode — with max-words fallback so long unpunctuated speech still splits
-  const maxWords = Math.max(chunkSize, 8)
+  // sentence mode: split on silence gaps, punctuation, or max-word limit
   const result: SubtitleEntry[] = []
   let current: WordSegment[] = []
+
   const flush = () => {
     if (!current.length) return
     result.push({
@@ -60,10 +63,20 @@ function splitToSubtitles(words: WordSegment[], mode: string, chunkSize: number)
     })
     current = []
   }
-  for (const w of words) {
+
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i]
     current.push(w)
-    const isSentenceEnd = w.word && SENTENCE_END.has(w.word[w.word.length - 1])
-    if (isSentenceEnd || current.length >= maxWords) flush()
+
+    const isPunctEnd = w.word && SENTENCE_END.has(w.word[w.word.length - 1])
+    const isMaxWords = current.length >= MAX_WORDS_PER_SUB
+
+    // Check silence gap to next word
+    const next = words[i + 1]
+    const silenceAfter = next ? (next.startMs - w.endMs) : 0
+    const isSilence = silenceAfter >= SILENCE_THRESHOLD_MS
+
+    if (isPunctEnd || isSilence || isMaxWords) flush()
   }
   flush()
   return result
