@@ -6,6 +6,7 @@ export const PLATFORM_KEYS = [
   'facebook-reels',
   'linkedin',
   '1:1',
+  '4:5',
   '16:9',
   '9:16',
   'universal',
@@ -24,16 +25,24 @@ export interface PlatformConfig {
 }
 
 export const PLATFORMS: Record<PlatformKey, PlatformConfig> = {
-  'instagram-reels': { label: 'Instagram Reels', w: 1080, h: 1920, safeTop: 250, safeBottom: 250, safeLeft: 35,  safeRight: 35  },
-  'instagram-story': { label: 'Instagram Story', w: 1080, h: 1920, safeTop: 250, safeBottom: 300, safeLeft: 35,  safeRight: 35  },
-  'tiktok':          { label: 'TikTok',           w: 1080, h: 1920, safeTop: 160, safeBottom: 480, safeLeft: 120, safeRight: 120 },
-  'youtube-shorts':  { label: 'YouTube Shorts',   w: 1080, h: 1920, safeTop: 380, safeBottom: 380, safeLeft: 60,  safeRight: 120 },
-  'facebook-reels':  { label: 'Facebook Reels',   w: 1080, h: 1920, safeTop: 250, safeBottom: 300, safeLeft: 35,  safeRight: 35  },
-  'linkedin':        { label: 'LinkedIn',          w: 1080, h: 1920, safeTop: 100, safeBottom: 200, safeLeft: 40,  safeRight: 40  },
-  '1:1':             { label: '1:1 Kare',          w: 1080, h: 1080, safeTop: 80,  safeBottom: 80,  safeLeft: 80,  safeRight: 80  },
-  '16:9':            { label: '16:9 Yatay',        w: 1920, h: 1080, safeTop: 60,  safeBottom: 60,  safeLeft: 100, safeRight: 100 },
-  '9:16':            { label: '9:16 Genel',        w: 1080, h: 1920, safeTop: 260, safeBottom: 260, safeLeft: 90,  safeRight: 90  },
-  'universal':       { label: 'Evrensel',          w: 1080, h: 1920, safeTop: 260, safeBottom: 260, safeLeft: 90,  safeRight: 90  },
+  // TikTok: top=profile bar(140), bottom=caption+nav+like area(420), right=action buttons(165)
+  'tiktok':          { label: 'TikTok',           w: 1080, h: 1920, safeTop: 140, safeBottom: 420, safeLeft: 35,  safeRight: 165 },
+  // Instagram Reels: top=username+follow(220), bottom=caption+engagement(450), right=buttons(120)
+  'instagram-reels': { label: 'Instagram Reels',  w: 1080, h: 1920, safeTop: 220, safeBottom: 450, safeLeft: 35,  safeRight: 120 },
+  // Instagram Story: top=profile(200), bottom=reply bar+stickers(350)
+  'instagram-story': { label: 'Instagram Story',  w: 1080, h: 1920, safeTop: 200, safeBottom: 350, safeLeft: 40,  safeRight: 40  },
+  // YouTube Shorts: top=search+menu(180), bottom=channel+title+music(350), right=like/share(120)
+  'youtube-shorts':  { label: 'YouTube Shorts',   w: 1080, h: 1920, safeTop: 180, safeBottom: 350, safeLeft: 60,  safeRight: 120 },
+  // Facebook Reels: similar to Instagram Reels
+  'facebook-reels':  { label: 'Facebook Reels',   w: 1080, h: 1920, safeTop: 200, safeBottom: 380, safeLeft: 40,  safeRight: 40  },
+  // LinkedIn: minimal UI overlay
+  'linkedin':        { label: 'LinkedIn',          w: 1080, h: 1920, safeTop: 100, safeBottom: 220, safeLeft: 40,  safeRight: 40  },
+  // Generic aspect ratios — use conservative middle-ground values
+  '9:16':            { label: '9:16 Genel',        w: 1080, h: 1920, safeTop: 180, safeBottom: 420, safeLeft: 50,  safeRight: 150 },
+  '4:5':             { label: '4:5 Dikey',         w: 1080, h: 1350, safeTop: 135, safeBottom: 135, safeLeft: 55,  safeRight: 55  },
+  '1:1':             { label: '1:1 Kare',          w: 1080, h: 1080, safeTop: 65,  safeBottom: 65,  safeLeft: 65,  safeRight: 65  },
+  '16:9':            { label: '16:9 Yatay',        w: 1920, h: 1080, safeTop: 60,  safeBottom: 80,  safeLeft: 80,  safeRight: 80  },
+  'universal':       { label: 'Evrensel',          w: 1080, h: 1920, safeTop: 180, safeBottom: 420, safeLeft: 50,  safeRight: 150 },
 }
 
 export const FONTS: { value: string; label: string }[] = [

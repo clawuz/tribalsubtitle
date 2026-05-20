@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useTimelineStore } from '@/lib/stores/timelineStore'
+import { PLATFORMS } from '@/remotion/compositions/platforms'
 
 interface SubtitleEntry {
   startMs: number
@@ -37,20 +38,6 @@ interface Props {
   }
 }
 
-const PLATFORM_DIMS: Record<string, { w: number; h: number }> = {
-  '9:16': { w: 1080, h: 1920 },
-  '16:9': { w: 1920, h: 1080 },
-  '1:1':  { w: 1080, h: 1080 },
-  '4:5':  { w: 1080, h: 1350 },
-}
-
-// Safe area insets as fraction of output dimensions (top, right, bottom, left)
-const SAFE_AREAS: Record<string, [number, number, number, number]> = {
-  '9:16': [0.08, 0.05, 0.15, 0.05],   // TikTok/Reels — bottom UI heavy
-  '16:9': [0.05, 0.05, 0.05, 0.05],
-  '1:1':  [0.05, 0.05, 0.05, 0.05],
-  '4:5':  [0.07, 0.05, 0.07, 0.05],
-}
 
 export function SubtitlePlayer({ videoUrl, platform = '9:16', subtitles, wordSegments = [], subtitleStyle }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -62,8 +49,15 @@ export function SubtitlePlayer({ videoUrl, platform = '9:16', subtitles, wordSeg
 
   const { currentTime, isPlaying, duration, setCurrentTime, setIsPlaying, setDuration } = useTimelineStore()
 
-  const dims = PLATFORM_DIMS[platform] ?? PLATFORM_DIMS['9:16']
-  const safe = SAFE_AREAS[platform] ?? SAFE_AREAS['9:16']
+  const platformCfg = (PLATFORMS as Record<string, typeof PLATFORMS['9:16']>)[platform]
+    ?? (PLATFORMS as Record<string, typeof PLATFORMS['9:16']>)['9:16']
+  const dims = { w: platformCfg.w, h: platformCfg.h }
+  const safe = [
+    platformCfg.safeTop    / platformCfg.h,
+    platformCfg.safeRight  / platformCfg.w,
+    platformCfg.safeBottom / platformCfg.h,
+    platformCfg.safeLeft   / platformCfg.w,
+  ] as [number, number, number, number]
   const aspectRatio = dims.w / dims.h
 
   const style = {
