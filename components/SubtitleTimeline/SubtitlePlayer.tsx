@@ -7,6 +7,12 @@ interface SubtitleEntry {
   startMs: number
   endMs: number
   text: string
+  color?: string
+  bgColor?: string
+  fontSize?: number
+  bold?: boolean
+  x?: number
+  y?: number
 }
 
 interface WordSegment {
@@ -225,12 +231,24 @@ export function SubtitlePlayer({ videoUrl, platform = '9:16', subtitles, wordSeg
           )}
 
           {/* Subtitle overlay */}
-          {activeSub && (
+          {activeSub && (() => {
+            // Merge global style with per-subtitle overrides
+            const subStyle = {
+              fontSize: activeSub.fontSize ?? style.fontSize,
+              color: activeSub.color ?? style.color,
+              bgColor: activeSub.bgColor ?? style.bgColor,
+              bold: activeSub.bold ?? style.bold,
+              x: activeSub.x ?? style.x,
+              y: activeSub.y ?? style.y,
+              fontFamily: style.fontFamily,
+            }
+            const subScaledFontSize = Math.max(10, subStyle.fontSize * scale)
+            return (
             <div
               className="absolute pointer-events-none"
               style={{
-                left: `${style.x}%`,
-                top: `${style.y}%`,
+                left: `${subStyle.x}%`,
+                top: `${subStyle.y}%`,
                 transform: 'translate(-50%, -50%)',
                 maxWidth: '85%',
                 textAlign: 'center',
@@ -239,12 +257,12 @@ export function SubtitlePlayer({ videoUrl, platform = '9:16', subtitles, wordSeg
             >
               <span
                 style={{
-                  fontSize: `${scaledFontSize}px`,
-                  fontFamily: style.fontFamily,
-                  fontWeight: style.bold ? 'bold' : 'normal',
-                  background: style.bgColor,
-                  padding: `${scaledFontSize * 0.08}px ${scaledFontSize * 0.23}px`,
-                  borderRadius: `${scaledFontSize * 0.12}px`,
+                  fontSize: `${subScaledFontSize}px`,
+                  fontFamily: subStyle.fontFamily,
+                  fontWeight: subStyle.bold ? 'bold' : 'normal',
+                  background: subStyle.bgColor,
+                  padding: `${subScaledFontSize * 0.08}px ${subScaledFontSize * 0.23}px`,
+                  borderRadius: `${subScaledFontSize * 0.12}px`,
                   lineHeight: 1.4,
                   display: 'inline-block',
                 }}
@@ -254,14 +272,15 @@ export function SubtitlePlayer({ videoUrl, platform = '9:16', subtitles, wordSeg
                   const subWords = wordSegments.filter(w => w.startMs >= activeSub.startMs && w.endMs <= activeSub.endMs + 200)
                   const activeIdx = activeWordSeg ? subWords.findIndex(w => w.startMs === activeWordSeg.startMs) : -1
                   return words.map((word, i) => (
-                    <span key={i} style={{ color: i === activeIdx ? '#facc15' : style.color, transition: 'color 0.05s' }}>
+                    <span key={i} style={{ color: i === activeIdx ? '#facc15' : subStyle.color, transition: 'color 0.05s' }}>
                       {word}{i < words.length - 1 ? ' ' : ''}
                     </span>
                   ))
                 })()}
               </span>
             </div>
-          )}
+            )
+          })()}
 
           {/* Click to play/pause */}
           <div className="absolute inset-0 cursor-pointer" style={{ zIndex: 20 }} onClick={togglePlay} />

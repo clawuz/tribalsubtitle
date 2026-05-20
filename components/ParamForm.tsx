@@ -507,6 +507,7 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
   const [translateTarget, setTranslateTarget] = useState('')
   const [translateStatus, setTranslateStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [translateMessage, setTranslateMessage] = useState('')
+  const [originalSubtitles, setOriginalSubtitles] = useState<SubtitleEntry[] | null>(null)
 
   const TRANSLATE_LANGS = [
     { code: 'en', name: 'English' },
@@ -629,6 +630,7 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
+      setOriginalSubtitles(currentSubtitles)
       update('subtitles', data.subtitles)
       setTranslateStatus('done')
       setTranslateMessage(`${lang?.name ?? translateTarget} diline çevrildi`)
@@ -827,7 +829,19 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
                 {translateStatus === 'loading' ? '⏳' : '🌐 Çevir'}
               </button>
             </div>
-            {translateStatus === 'done' && <p className="text-xs text-emerald-600 font-medium">✓ {translateMessage}</p>}
+            {translateStatus === 'done' && (
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-emerald-600 font-medium">✓ {translateMessage}</p>
+                {originalSubtitles && (
+                  <button
+                    onClick={() => { update('subtitles', originalSubtitles); setOriginalSubtitles(null); setTranslateStatus('idle') }}
+                    className="text-[10px] text-gray-500 hover:text-gray-800 border border-gray-200 rounded px-1.5 py-0.5 hover:bg-gray-50"
+                  >
+                    ↩ Orijinale Dön
+                  </button>
+                )}
+              </div>
+            )}
             {translateStatus === 'error' && <p className="text-xs text-red-500">⚠ {translateMessage}</p>}
           </div>
         )}
