@@ -7,7 +7,7 @@ import { SubtitleForm } from '@/components/ParamForm'
 import { PLATFORMS, PLATFORM_KEYS, PlatformKey } from '@/remotion/compositions/platforms'
 import { HistoryTab } from '@/components/HistoryTab'
 import { ExportPanel } from '@/components/ExportPanel'
-import { getProject, Project } from '@/lib/projects'
+import { getProject, saveProject, addRender, getRenders, Project } from '@/lib/projects'
 
 
 const SubtitleTimeline = dynamic(
@@ -67,6 +67,28 @@ function SubtitlePage() {
     setProjectName(project.name)
     setParams(project.params)
     setActiveTab('editor')
+  }
+
+  const handleExportSuccess = async () => {
+    const name = projectName.trim() || 'İsimsiz Proje'
+    try {
+      const projectId = await saveProject(
+        name,
+        'Subtitle',
+        String(params.platform ?? '9:16'),
+        params,
+      )
+      const existingRenders = await getRenders(projectId)
+      await addRender(
+        projectId,
+        `export-${Date.now()}`,
+        String(params.platform ?? '9:16'),
+        Number(params.durationSeconds ?? 0),
+        existingRenders.length + 1,
+      )
+    } catch (e) {
+      console.warn('[page] Failed to save project to history:', e)
+    }
   }
 
   const tabs: { key: Tab; label: string }[] = [
@@ -162,6 +184,7 @@ function SubtitlePage() {
                       },
                     }}
                     projectName={projectName}
+                    onExportSuccess={handleExportSuccess}
                     onClose={() => setShowExportPanel(false)}
                   />
                 </div>

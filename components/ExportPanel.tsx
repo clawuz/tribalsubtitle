@@ -13,10 +13,11 @@ import type { ExportProgress } from '@/lib/engine/export/types'
 interface ExportPanelProps {
   exportOptions: Omit<SubtitleExportOptions, 'export' | 'filename'>
   projectName?: string
+  onExportSuccess?: () => void
   onClose?: () => void
 }
 
-export function ExportPanel({ exportOptions, projectName, onClose }: ExportPanelProps) {
+export function ExportPanel({ exportOptions, projectName, onExportSuccess, onClose }: ExportPanelProps) {
   const { settings, set } = useExportStore()
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -61,6 +62,7 @@ export function ExportPanel({ exportOptions, projectName, onClose }: ExportPanel
         onProgress,
       )
       setProgress({ phase: 'done', percent: 100 })
+      onExportSuccess?.()
     } catch (e) {
       if (e instanceof Error && e.message === 'İptal edildi') {
         setProgress(null)
