@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useTimelineStore } from '@/lib/stores/timelineStore'
 import { PLATFORMS } from '@/remotion/compositions/platforms'
+import { loadGoogleFont } from '@/lib/googleFontsLoader'
 
 interface SubtitleEntry {
   startMs: number
@@ -69,6 +70,9 @@ export function SubtitlePlayer({ videoUrl, platform = '9:16', subtitles, wordSeg
     x: subtitleStyle?.x ?? 50,
     y: subtitleStyle?.y ?? 85,
   }
+
+  // Load Google Font when fontFamily changes
+  useEffect(() => { loadGoogleFont(style.fontFamily) }, [style.fontFamily])
 
   // Measure container for font scaling
   useEffect(() => {

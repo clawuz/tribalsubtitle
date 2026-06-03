@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { ColorPicker } from './ColorPicker'
 import { BodyItem, EntryAnimType, ExitAnimType, SubtitleEntry } from '@/remotion/compositions/types'
 import { PLATFORMS, PLATFORM_KEYS, FONTS } from '@/remotion/compositions/platforms'
+import { loadGoogleFont } from '@/lib/googleFontsLoader'
 
 // Converts rgba(...) to hex so <input type="color"> doesn't throw format errors
 function extractHex(val: string): string {
@@ -930,7 +931,7 @@ export function SubtitleForm({ values, update }: { values: Record<string, unknow
             <label className="block text-xs text-gray-500 mb-1 font-medium">Font</label>
             <select className="w-full bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 text-xs"
               value={String(values.subtitleFontFamily ?? 'TKTextVF')}
-              onChange={e => update('subtitleFontFamily', e.target.value)}>
+              onChange={e => { loadGoogleFont(e.target.value); update('subtitleFontFamily', e.target.value) }}>
               {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
             </select>
           </div>
@@ -1114,7 +1115,7 @@ function CommonFields({ values, update, templateId }: { values: Record<string, u
         {templateId !== 'Subtitle' && (
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Font</label>
-            <select className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm" value={String(values.fontFamily ?? 'sans-serif')} onChange={e => update('fontFamily', e.target.value)}>
+            <select className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm" value={String(values.fontFamily ?? 'sans-serif')} onChange={e => { loadGoogleFont(e.target.value); update('fontFamily', e.target.value) }}>
               {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
             </select>
           </div>
