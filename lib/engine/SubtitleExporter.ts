@@ -64,12 +64,15 @@ export class SubtitleExporter {
 
     // ── 1. Load background video ──────────────────────────────────────────
     const video = document.createElement('video')
-    video.crossOrigin = 'anonymous'
+    // blob: URLs are same-origin — don't set crossOrigin (breaks some browsers)
+    if (!options.backgroundMediaUrl.startsWith('blob:')) {
+      video.crossOrigin = 'anonymous'
+    }
     video.muted = true
     video.preload = 'auto'
     video.src = options.backgroundMediaUrl
     await new Promise<void>((res, rej) => {
-      video.onloadeddata = () => res()
+      video.onloadedmetadata = () => res()
       video.onerror = () => rej(new Error('Video yüklenemedi'))
       video.load()
     })
